@@ -29,6 +29,24 @@ func (cg *cardGetter) GetCardsByCollectionId(collectionId int) ([]models.Card, e
 
 }
 
+func (cg *cardGetter) GetCardsByIdolId(idolId int) ([]models.Card, error) {
+
+	return cg.CardGetterService.GetCardsByIdolId(idolId)
+
+}
+
+func (cg *cardGetter) GetCardsByGroupId(groupId int) ([]models.Card, error) {
+
+	return cg.CardGetterService.GetCardsByGroupId(groupId)
+
+}
+
+func (cg *cardGetter) GetCardsByAlbumId(albumId int) ([]models.Card, error) {
+
+	return cg.CardGetterService.GetCardsByAlbumId(albumId)
+
+}
+
 func (cg *cardGetter) GetCards() ([]models.Card, error) {
 
 	return cg.CardGetterService.GetCards()

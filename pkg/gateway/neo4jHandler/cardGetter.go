@@ -8,22 +8,29 @@ import (
 )
 
 type Neo4jGetter struct {
-	Driver *neo4j.Driver
+	Driver  *neo4j.Driver
+	Session *neo4j.Session
 }
 
 func NewNeo4jGetter(driver *neo4j.Driver) *Neo4jGetter {
 
+	if driver == nil {
+
+		panic("driver is nil")
+
+	}
+	driverAux := *driver
+	session := driverAux.NewSession(neo4j.SessionConfig{})
+	defer session.Close()
 	return &Neo4jGetter{
-		Driver: driver,
+		Driver:  driver,
+		Session: &session,
 	}
 
 }
 
 func (getter *Neo4jGetter) GetCardsByUserId(userId int) ([]models.Card, error) {
 
-	driver := *(getter.Driver)
-	session := driver.NewSession(neo4j.SessionConfig{})
-	defer session.Close()
 	query := `MATCH (u:User)-[h:HAS]->(c:Card)-[:PART_OF]->(col:Collection) 
 			WHERE u.discordId = $discordId
 			RETURN c, h, col`
@@ -33,6 +40,7 @@ func (getter *Neo4jGetter) GetCardsByUserId(userId int) ([]models.Card, error) {
 		Key:   "discordId",
 		Value: userIdString,
 	}
+	session := *(getter.Session)
 	cards, err := session.ReadTransaction(fetchCardsInv(query, queryArgs))
 
 	if err != nil {
@@ -47,15 +55,73 @@ func (getter *Neo4jGetter) GetCardsByUserId(userId int) ([]models.Card, error) {
 
 func (getter *Neo4jGetter) GetCardsByCollectionId(collectionId int) ([]models.Card, error) {
 
-	driver := *(getter.Driver)
-	session := driver.NewSession(neo4j.SessionConfig{})
-	defer session.Close()
 	query := `MATCH (c:Card)-[:PART_OF]->(col:Collection) 
 			WHERE id(col) = $collectionId
 			RETURN c, col`
 	queryArgs := models.QueryArgs{
 		Key:   "collectionId",
 		Value: collectionId,
+	}
+	session := *(getter.Session)
+	cards, err := session.ReadTransaction(fetchCards(query, queryArgs))
+	if err != nil {
+
+		return nil, err
+
+	}
+	return cards.([]models.Card), nil
+
+}
+
+func (getter *Neo4jGetter) GetCardsByIdolId(idolId int) ([]models.Card, error) {
+
+	session := *(getter.Session)
+	query := `MATCH (i:Idol)-[:IN]->(c:Card)-[:PART_OF]->(col:Collection)
+			WHERE id(i) = $idolId
+			RETURN c, col`
+	queryArgs := models.QueryArgs{
+		Key:   "idolId",
+		Value: idolId,
+	}
+	cards, err := session.ReadTransaction(fetchCards(query, queryArgs))
+	if err != nil {
+
+		return nil, err
+
+	}
+	return cards.([]models.Card), nil
+
+}
+
+func (getter *Neo4jGetter) GetCardsByGroupId(groupId int) ([]models.Card, error) {
+
+	session := *(getter.Session)
+	query := `MATCH (g:Group)-[:RELATED_TO]->(col:Collection)<-[:PART_OF]->(c:Card)
+			WHERE id(g) = $groupId
+			RETURN c, col`
+	queryArgs := models.QueryArgs{
+		Key:   "groupId",
+		Value: groupId,
+	}
+	cards, err := session.ReadTransaction(fetchCards(query, queryArgs))
+	if err != nil {
+
+		return nil, err
+
+	}
+	return cards.([]models.Card), nil
+
+}
+
+func (getter *Neo4jGetter) GetCardsByAlbumId(albumId int) ([]models.Card, error) {
+
+	session := *(getter.Session)
+	query := `MATCH (a:Album)-[:RELATED_TO]->(col:Collection)<-[:PART_OF]->(c:Card)
+				WHERE id(a) = $albumId
+				RETURN c, col`
+	queryArgs := models.QueryArgs{
+		Key:   "albumId",
+		Value: albumId,
 	}
 	cards, err := session.ReadTransaction(fetchCards(query, queryArgs))
 	if err != nil {
@@ -69,9 +135,7 @@ func (getter *Neo4jGetter) GetCardsByCollectionId(collectionId int) ([]models.Ca
 
 func (getter *Neo4jGetter) GetCards() ([]models.Card, error) {
 
-	driver := *(getter.Driver)
-	session := driver.NewSession(neo4j.SessionConfig{})
-	defer session.Close()
+	session := *(getter.Session)
 	query := `MATCH (c:Card)-[:PART_OF]->(col:Collection) 
 			RETURN c, col`
 	cards, err := session.ReadTransaction(fetchCards(query))

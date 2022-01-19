@@ -41,6 +41,42 @@ func (cgs *CardGetterService) GetCardsByCollectionId(collectionId int) ([]models
 
 }
 
+func (cgs *CardGetterService) GetCardsByIdolId(idolId int) ([]models.Card, error) {
+
+	if idolId == 0 {
+
+		return nil, models.ErrEmptyIdolId
+
+	}
+
+	return cgs.CardGetter.GetCardsByIdolId(idolId)
+
+}
+
+func (cgs *CardGetterService) GetCardsByGroupId(groupId int) ([]models.Card, error) {
+
+	if groupId == 0 {
+
+		return nil, models.ErrEmptyGroupId
+
+	}
+
+	return cgs.CardGetter.GetCardsByGroupId(groupId)
+
+}
+
+func (cgs *CardGetterService) GetCardsByAlbumId(albumId int) ([]models.Card, error) {
+
+	if albumId == 0 {
+
+		return nil, models.ErrEmptyAlbumId
+
+	}
+
+	return cgs.CardGetter.GetCardsByAlbumId(albumId)
+
+}
+
 func (cgs *CardGetterService) GetCards() ([]models.Card, error) {
 
 	return cgs.CardGetter.GetCards()
